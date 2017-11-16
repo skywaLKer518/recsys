@@ -1,0 +1,77 @@
+{
+    "dataset_name": "ml1m",
+    "raw_data_dir": "examples/dataset",
+    "cache_dir": "examples/cache/lstm_ml1m",
+    "train_dir": "examples/train/lstm_ml1m",
+    "test": false,
+    "combine_att": "mix",
+    "use_user_feature": true,
+    "use_item_feature": true,
+    "user_vocab_size": 150000,
+    "item_vocab_size": 3100,
+    "vocab_min_thresh": 1,
+
+    "loss": "ce",
+    "loss_func": "log",
+    "loss_exp_p": 1.0005,
+    "learning_rate": 1,
+    "keep_prob": 0.5,
+    "learning_rate_decay_factor": 1.0,
+    "batch_size": 64,
+    "size": 64,
+    "max_gradient_norm": 5.0,
+    "patience": 20,
+    "power": 0.5,
+    "num_layers": 1,
+    "n_epoch": 10,
+    "steps_per_checkpoint": 5,
+    "L": 30,
+    "n_bucket": 10,
+
+    "recommend": false,
+    "saverec": false,
+    "top_N_items": 100,
+    "topk": 100,
+    "recommend_new": false,
+
+    "ensemble": false,
+    "ensemble_suffix": "",
+    "seed": 0,
+
+    "nonlinear": "linear",
+    "hidden_size": 500,
+
+    "n_resample": 50,
+    "n_sampled": 1024,
+
+    "sample_type": "random",
+    "user_sample": 1.0,
+
+    "output_feat": 1,
+    "use_sep_item": false,
+    "no_input_item_feature": false,
+    "use_concat": false,
+    "no_user_id": true,
+
+    "N": "000",
+    "withAdagrad": true,
+    "fromScratch": true,
+    "saveCheckpoint": false,
+
+    "gpu": -1,
+    "profile": false,
+    "device_log": false,
+    "eval": true,
+    "use_more_train": false,
+    "model_option": "loss",
+
+    "ta": 1,
+    "after40": false,
+    "split": "last",
+
+    "beam_search": false,
+    "beam_size": 10,
+
+    "max_train_data_size": 0,
+    "old_att": false
+}

@@ -25,7 +25,7 @@ tf.app.flags.DEFINE_boolean("use_user_feature", True, "RT")
 tf.app.flags.DEFINE_boolean("use_item_feature", True, "RT")
 tf.app.flags.DEFINE_integer("user_vocab_size", 150000, "User vocabulary size.")
 tf.app.flags.DEFINE_integer("item_vocab_size", 50000, "Item vocabulary size.")
-tf.app.flags.DEFINE_integer("item_vocab_min_thresh", 2, "filter inactive tokens.")
+tf.app.flags.DEFINE_integer("vocab_min_thresh", 2, "filter inactive tokens.")
 
 # tuning hypers
 tf.app.flags.DEFINE_string("loss", 'ce', "loss function: ce, warp, (mw, mce, bpr)")
@@ -67,7 +67,7 @@ tf.app.flags.DEFINE_string("sample_type", 'random', "random, sweep, permute")
 tf.app.flags.DEFINE_float("user_sample", 1.0, "user sample rate.")
 tf.app.flags.DEFINE_integer("seed", 0, "mini batch sampling random seed.")
 
-# 
+#
 tf.app.flags.DEFINE_integer("gpu", -1, "gpu card number")
 tf.app.flags.DEFINE_boolean("profile", False, "False = no profile, True = profile")
 tf.app.flags.DEFINE_boolean("device_log", False,
@@ -93,20 +93,20 @@ def mylog(msg):
   logging.info(msg)
   return
 
-def create_model(session, u_attributes=None, i_attributes=None, 
-  item_ind2logit_ind=None, logit_ind2item_ind=None, 
-  loss = FLAGS.loss, logit_size_test=None, ind_item = None):  
+def create_model(session, u_attributes=None, i_attributes=None,
+  item_ind2logit_ind=None, logit_ind2item_ind=None,
+  loss = FLAGS.loss, logit_size_test=None, ind_item = None):
   gpu = None if FLAGS.gpu == -1 else FLAGS.gpu
   n_sampled = FLAGS.n_sampled if FLAGS.loss in ['mw', 'mce'] else None
   import hmf_model
-  model = hmf_model.LatentProductModel(FLAGS.user_vocab_size, 
-    FLAGS.item_vocab_size, FLAGS.size, FLAGS.num_layers, 
-    FLAGS.batch_size, FLAGS.learning_rate, 
-    FLAGS.learning_rate_decay_factor, u_attributes, i_attributes, 
-    item_ind2logit_ind, logit_ind2item_ind, loss_function = loss, GPU=gpu, 
-    logit_size_test=logit_size_test, nonlinear=FLAGS.nonlinear, 
+  model = hmf_model.LatentProductModel(FLAGS.user_vocab_size,
+    FLAGS.item_vocab_size, FLAGS.size, FLAGS.num_layers,
+    FLAGS.batch_size, FLAGS.learning_rate,
+    FLAGS.learning_rate_decay_factor, u_attributes, i_attributes,
+    item_ind2logit_ind, logit_ind2item_ind, loss_function = loss, GPU=gpu,
+    logit_size_test=logit_size_test, nonlinear=FLAGS.nonlinear,
     dropout=FLAGS.keep_prob, n_sampled=n_sampled, indices_item=ind_item,
-    top_N_items=FLAGS.top_N_items, hidden_size=FLAGS.hidden_size, 
+    top_N_items=FLAGS.top_N_items, hidden_size=FLAGS.hidden_size,
     loss_func= FLAGS.loss_func, loss_exp_p = FLAGS.loss_exp_p)
 
   if not os.path.isdir(FLAGS.train_dir):
@@ -125,16 +125,16 @@ def create_model(session, u_attributes=None, i_attributes=None,
   return model
 
 def train(raw_data=FLAGS.raw_data, train_dir=FLAGS.train_dir, mylog=mylog,
-  data_dir=FLAGS.data_dir, combine_att=FLAGS.combine_att, test=FLAGS.test, 
-  logits_size_tr=FLAGS.item_vocab_size, thresh=FLAGS.item_vocab_min_thresh,
-  use_user_feature=FLAGS.use_user_feature, 
+  data_dir=FLAGS.data_dir, combine_att=FLAGS.combine_att, test=FLAGS.test,
+  logits_size_tr=FLAGS.item_vocab_size, thresh=FLAGS.vocab_min_thresh,
+  use_user_feature=FLAGS.use_user_feature,
   use_item_feature=FLAGS.use_item_feature,
-  batch_size=FLAGS.batch_size, steps_per_checkpoint=FLAGS.steps_per_checkpoint, 
+  batch_size=FLAGS.batch_size, steps_per_checkpoint=FLAGS.steps_per_checkpoint,
   loss_func=FLAGS.loss, max_patience=FLAGS.patience, go_test=FLAGS.test,
-  max_epoch=FLAGS.n_epoch, sample_type=FLAGS.sample_type, power=FLAGS.power,  
-  use_more_train=FLAGS.use_more_train, profile=FLAGS.profile, 
+  max_epoch=FLAGS.n_epoch, sample_type=FLAGS.sample_type, power=FLAGS.power,
+  use_more_train=FLAGS.use_more_train, profile=FLAGS.profile,
   device_log=FLAGS.device_log):
-  with tf.Session(config=tf.ConfigProto(allow_soft_placement=True, 
+  with tf.Session(config=tf.ConfigProto(allow_soft_placement=True,
     log_device_placement=device_log)) as sess:
     run_options = None
     run_metadata = None
@@ -144,25 +144,25 @@ def train(raw_data=FLAGS.raw_data, train_dir=FLAGS.train_dir, mylog=mylog,
       run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
       run_metadata = tf.RunMetadata()
       steps_per_checkpoint = 30
-    
+
     mylog("reading data")
-    (data_tr, data_va, u_attributes, i_attributes,item_ind2logit_ind, 
+    (data_tr, data_va, u_attributes, i_attributes,item_ind2logit_ind,
       logit_ind2item_ind, _, _) = read_data(
-      raw_data_dir=raw_data, 
-      data_dir=data_dir, 
-      combine_att=combine_att, 
-      logits_size_tr=logits_size_tr, 
-      thresh=thresh, 
+      raw_data_dir=raw_data,
+      data_dir=data_dir,
+      combine_att=combine_att,
+      logits_size_tr=logits_size_tr,
+      thresh=thresh,
       use_user_feature=use_user_feature,
-      use_item_feature=use_item_feature, 
-      test=test, 
+      use_item_feature=use_item_feature,
+      test=test,
       mylog=mylog)
 
     mylog("train/dev size: %d/%d" %(len(data_tr),len(data_va)))
 
     '''
     remove some rare items in both train and valid set
-    this helps make train/valid set distribution similar 
+    this helps make train/valid set distribution similar
     to each other
     '''
     mylog("original train/dev size: %d/%d" %(len(data_tr),len(data_va)))
@@ -189,14 +189,14 @@ def train(raw_data=FLAGS.raw_data, train_dir=FLAGS.train_dir, mylog=mylog,
 
     mylog('started training')
     step_time, loss, current_step, auc = 0.0, 0.0, 0, 0.0
-    
-    repeat = 5 if loss_func.startswith('bpr') else 1   
+
+    repeat = 5 if loss_func.startswith('bpr') else 1
     patience = max_patience
 
     if os.path.isfile(os.path.join(train_dir, 'auc_train.npy')):
       auc_train = list(np.load(os.path.join(train_dir, 'auc_train.npy')))
       auc_dev = list(np.load(os.path.join(train_dir, 'auc_dev.npy')))
-      previous_losses = list(np.load(os.path.join(train_dir, 
+      previous_losses = list(np.load(os.path.join(train_dir,
         'loss_train.npy')))
       losses_dev = list(np.load(os.path.join(train_dir, 'loss_dev.npy')))
       best_auc = max(auc_dev)
@@ -232,14 +232,14 @@ def train(raw_data=FLAGS.raw_data, train_dir=FLAGS.train_dir, mylog=mylog,
       ranndom_number_01 = np.random.random_sample()
       start_time = time.time()
       (user_input, item_input, neg_item_input) = get_next_batch(data_tr)
-      
+
       if loss_func in ['mw', 'mce'] and current_step % FLAGS.n_resample == 0:
-        item_sampled, item_sampled_id2idx = sample_items(item_population, 
+        item_sampled, item_sampled_id2idx = sample_items(item_population,
           FLAGS.n_sampled, p_item)
       else:
         item_sampled = None
 
-      step_loss = model.step(sess, user_input, item_input, 
+      step_loss = model.step(sess, user_input, item_input,
         neg_item_input, item_sampled, item_sampled_id2idx, loss=loss_func,
         run_op=run_options, run_meta=run_metadata)
 
@@ -267,7 +267,7 @@ def train(raw_data=FLAGS.raw_data, train_dir=FLAGS.train_dir, mylog=mylog,
 
         # Decrease learning rate if no improvement was seen over last 3 times.
         if len(previous_losses) > 2 and loss > max(previous_losses[-3:]):
-          sess.run(model.learning_rate_decay_op) 
+          sess.run(model.learning_rate_decay_op)
         previous_losses.append(loss)
         auc_train.append(auc)
 
@@ -276,8 +276,8 @@ def train(raw_data=FLAGS.raw_data, train_dir=FLAGS.train_dir, mylog=mylog,
 
         if not FLAGS.eval:
           continue
-        
-        
+
+
         # Run evals on development set and print their loss.
         l_va = len(data_va)
         eval_loss, eval_auc = 0.0, 0.0
@@ -294,7 +294,7 @@ def train(raw_data=FLAGS.raw_data, train_dir=FLAGS.train_dir, mylog=mylog,
             item_va_neg = None
             the_loss = 'warp' if loss_func == 'mw' else loss_func
             eval_loss0 = model.step(sess, user_va, item_va, item_va_neg,
-              None, None, forward_only=True, 
+              None, None, forward_only=True,
               loss=the_loss)
             eval_loss += eval_loss0
             count_va += 1
@@ -306,22 +306,22 @@ def train(raw_data=FLAGS.raw_data, train_dir=FLAGS.train_dir, mylog=mylog,
           mylog("  dev: perplexity %.2f eval_auc(not computed) %.4f step-time %.4f" % (
             eval_ppx, eval_auc, step_time))
         else:
-          mylog("  dev: loss %.3f eval_auc(not computed) %.4f step-time %.4f" % (eval_loss, 
+          mylog("  dev: loss %.3f eval_auc(not computed) %.4f step-time %.4f" % (eval_loss,
             eval_auc, step_time))
         sys.stdout.flush()
-        
+
         if eval_loss < best_loss and not go_test:
           best_loss = eval_loss
           patience = max_patience
           checkpoint_path = os.path.join(train_dir, "best.ckpt")
           mylog('Saving best model...')
-          model.saver.save(sess, checkpoint_path, 
+          model.saver.save(sess, checkpoint_path,
             global_step=0, write_meta_graph = False)
 
         if go_test:
           checkpoint_path = os.path.join(train_dir, "best.ckpt")
           mylog('Saving best model...')
-          model.saver.save(sess, checkpoint_path, 
+          model.saver.save(sess, checkpoint_path,
             global_step=0, write_meta_graph = False)
 
         if eval_loss > best_loss:
@@ -337,27 +337,27 @@ def train(raw_data=FLAGS.raw_data, train_dir=FLAGS.train_dir, mylog=mylog,
           break
   return
 
-def recommend(target_uids=[], raw_data=FLAGS.raw_data, data_dir=FLAGS.data_dir, 
-  combine_att=FLAGS.combine_att, logits_size_tr=FLAGS.item_vocab_size, 
-  item_vocab_min_thresh=FLAGS.item_vocab_min_thresh, loss=FLAGS.loss, 
+def recommend(target_uids=[], raw_data=FLAGS.raw_data, data_dir=FLAGS.data_dir,
+  combine_att=FLAGS.combine_att, logits_size_tr=FLAGS.item_vocab_size,
+  vocab_min_thresh=FLAGS.vocab_min_thresh, loss=FLAGS.loss,
   top_n=FLAGS.top_N_items, test=FLAGS.test, mylog=mylog,
-  use_user_feature=FLAGS.use_user_feature, 
+  use_user_feature=FLAGS.use_user_feature,
   use_item_feature=FLAGS.use_item_feature,
   batch_size=FLAGS.batch_size, device_log=FLAGS.device_log):
 
-  with tf.Session(config=tf.ConfigProto(allow_soft_placement=True, 
+  with tf.Session(config=tf.ConfigProto(allow_soft_placement=True,
     log_device_placement=device_log)) as sess:
     mylog("reading data")
-    (_, _, u_attributes, i_attributes, item_ind2logit_ind, 
+    (_, _, u_attributes, i_attributes, item_ind2logit_ind,
       logit_ind2item_ind, user_index, item_index) = read_data(
-      raw_data_dir=raw_data, 
-      data_dir=data_dir, 
-      combine_att=combine_att, 
-      logits_size_tr=logits_size_tr, 
-      thresh=item_vocab_min_thresh, 
+      raw_data_dir=raw_data,
+      data_dir=data_dir,
+      combine_att=combine_att,
+      logits_size_tr=logits_size_tr,
+      thresh=vocab_min_thresh,
       use_user_feature=use_user_feature,
-      use_item_feature=use_item_feature, 
-      test=test, 
+      use_item_feature=use_item_feature,
+      test=test,
       mylog=mylog)
 
     model = create_model(sess, u_attributes, i_attributes, item_ind2logit_ind,
@@ -368,24 +368,24 @@ def recommend(target_uids=[], raw_data=FLAGS.raw_data, data_dir=FLAGS.data_dir,
     N = len(Uinds)
     mylog("%d target users to recommend" % N)
     rec = np.zeros((N, top_n), dtype=int)
-    
+
     count = 0
     time_start = time.time()
     for idx_s in range(0, N, batch_size):
       count += 1
       if count % 100 == 0:
         mylog("idx: %d, c: %d" % (idx_s, count))
-        
+
       idx_e = idx_s + batch_size
       if idx_e <= N:
         users = Uinds[idx_s: idx_e]
-        recs = model.step(sess, users, None, None, forward_only=True, 
+        recs = model.step(sess, users, None, None, forward_only=True,
           recommend=True)
         rec[idx_s:idx_e, :] = recs
       else:
         users = range(idx_s, N) + [0] * (idx_e - N)
         users = [Uinds[t] for t in users]
-        recs = model.step(sess, users, None, None, forward_only=True, 
+        recs = model.step(sess, users, None, None, forward_only=True,
           recommend=True)
         idx_e = N
         rec[idx_s:idx_e, :] = recs[:(idx_e-idx_s),:]
@@ -395,7 +395,7 @@ def recommend(target_uids=[], raw_data=FLAGS.raw_data, data_dir=FLAGS.data_dir,
 
     # transform result to a dictionary
     # R[user_id] = [item_id1, item_id2, ...]
-    
+
     ind2id = {}
     for iid in item_index:
       uind = item_index[iid]
@@ -411,12 +411,12 @@ def recommend(target_uids=[], raw_data=FLAGS.raw_data, data_dir=FLAGS.data_dir,
 def compute_scores(raw_data_dir=FLAGS.raw_data, data_dir=FLAGS.data_dir,
   dataset=FLAGS.dataset, save_recommendation=FLAGS.saverec,
   train_dir=FLAGS.train_dir, test=FLAGS.test):
-  
+
   from evaluate import Evaluation as Evaluate
   evaluation = Evaluate(raw_data_dir, test=test)
- 
+
   R = recommend(evaluation.get_uids(), data_dir=data_dir)
-  
+
   evaluation.eval_on(R)
   scores_self, scores_ex = evaluation.get_scores()
   mylog("====evaluation scores (NDCG, RECALL, PRECISION, MAP) @ 2,5,10,20,30====")
@@ -427,7 +427,7 @@ def compute_scores(raw_data_dir=FLAGS.raw_data, data_dir=FLAGS.data_dir,
     np.save(name_inds, rec)
 
 def main(_):
-  
+
   if FLAGS.test:
     if FLAGS.data_dir[-1] == '/':
       FLAGS.data_dir = FLAGS.data_dir[:-1] + '_test'
@@ -450,4 +450,3 @@ def main(_):
 
 if __name__ == "__main__":
     tf.app.run()
-
