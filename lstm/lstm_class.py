@@ -128,6 +128,10 @@ class lstm(object):
         if not os.path.exists(self.FLAGS.train_dir):
             os.mkdir(self.FLAGS.train_dir)
 
+        if self.FLAGS.beam_search:
+            self.FLAGS.batch_size = 1
+            self.FLAGS.n_bucket = 1
+
         return
 
     def mylog(self, msg):

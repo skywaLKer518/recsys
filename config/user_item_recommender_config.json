@@ -1,4 +1,5 @@
 {
+    "model": "lstm",
     "dataset_name": "ml1m",
     "raw_data_dir": "examples/dataset",
     "cache_dir": "examples/cache/lstm_ml1m",
@@ -28,7 +29,7 @@
     "L": 30,
     "n_bucket": 10,
 
-    "recommend": false,
+    "recommend": true,
     "saverec": false,
     "top_N_items": 100,
     "topk": 100,

@@ -46,11 +46,27 @@ def main(_):
     configs = config_ENV_setup(config_file_path_dict)
 
     # build recommendations
-    # hmf_model = hmf(configs['user_item_recommender_config'])
-    lstm_model = lstm(configs['user_item_recommender_config'])
-    # hmf_model.train()
-    lstm_model.train()
-    # hmf_model.compute_scores()
+
+    if configs['user_item_recommender_config']['model'] == "hmf":
+        hmf_model = hmf(configs['user_item_recommender_config'])
+
+        if configs['user_item_recommender_config']['recommend']:
+            hmf_model.compute_scores()
+        else:
+            hmf_model.train()
+    else:
+        lstm_model = lstm(configs['user_item_recommender_config'])
+
+        if configs['user_item_recommender_config']['beam_search']:
+            lstm_model.beam_search()
+
+        if configs['user_item_recommender_config']['ensemble']:
+            lstm_model.ensemble()
+
+        if configs['user_item_recommender_config']['recommend']:
+            lstm_model.recommend()
+        else:
+            lstm_model.train()
 
 
 if __name__ == "__main__":
