@@ -18,6 +18,9 @@ sys.path.insert(0, '../attributes')
 from input_attribute import read_data
 from prepare_train import positive_items, item_frequency, sample_items
 from attrdict import AttrDict
+from pandatools import pd
+from load_config import load_configurations
+from sqlalchemy import create_engine
 
 
 class hmf(object):
@@ -30,6 +33,10 @@ class hmf(object):
         """
         # setup
         self.config = config
+        self.config['db_config'] = load_configurations(
+            'config/environment/' + self.config['environment'] + '.json')
+        self.ent1 = self.config['entity1_ID']
+        self.ent2 = self.config['entity2_ID']
         self.FLAGS = AttrDict()
         # self.config['db_config'] = load_configurations( 'config/environment/'+self.config['environment']+'.json' )
         # datasets, paths, and preprocessing
@@ -457,6 +464,10 @@ class hmf(object):
                 R[uid] = [ind2id[logit_ind2item_ind[v]]
                           for v in list(rec[i, :])]
 
+            self.recs = pd.DataFrame.from_dict(R, orient="index")
+            self.recs = self.recs.stack().reset_index()
+            self.recs.columns = [self.ent1, 'slot', self.ent2]
+
         return R
 
     def compute_scores(self):
@@ -470,6 +481,12 @@ class hmf(object):
         from evaluate import Evaluation as Evaluate
         evaluation = Evaluate(raw_data, test=test)
 
+        # if filter:
+        # get past N days of recommendations, these will be filtered out
+        # from the final list to avoid making duplicate recommendations
+        # self.mylog('backing up most recent recommendations & fetch recommendations in the past %d days' %self.config['recs_past_N_days'])
+        # self.get_past_rec()
+
         R = self.recommend(evaluation.get_uids())
 
         evaluation.eval_on(R)
@@ -478,6 +495,130 @@ class hmf(object):
             "====evaluation scores (NDCG, RECALL, PRECISION, MAP) @ 2,5,10,20,30====")
         self.mylog("METRIC_FORMAT (self): {}".format(scores_self))
         self.mylog("METRIC_FORMAT (ex  ): {}".format(scores_ex))
-        if save_recommendation:
-            name_inds = os.path.join(train_dir, "indices.npy")
-            np.save(name_inds, rec)
+
+        if self.FLAGS.saverec:
+            self.write_to_db(self.recs)
+
+    def write_to_db(self, df):
+        """ write recommenations to database
+        """
+
+        # form the connection string used to connect to recommendation_service DB
+        try:
+            cxn_string = "mysql+mysqlconnector://%(user)s:%(password)s@%(host)s/%(database)s" % \
+                         self.config['db_config']['recommendation_service']
+            engine = create_engine(cxn_string)
+        except:
+            self.mylog(
+                'error creating connection engine, check connection string: %s' % cxn_string)
+            self.mylog(sys.exc_info())
+            sys.exit()
+
+        # write new records to target output DB table
+        try:
+            start = time.time()
+            self.mylog('writing new recommendations to db')
+
+            # decode entity1 and entity2 back into alpha-numeric IDs
+            #df[self.ent1] = self.ent1_encoder.inverse_transform(df[self.ent1])
+            #df[self.ent2] = self.ent2_encoder.inverse_transform(df[self.ent2])
+            # add timestamp to mark when the recommendations were made
+            df['createdAt'] = time.strftime('%Y-%m-%d %H:%M:%S')
+            df = df[['createdAt', self.ent1, self.ent2, 'slot']]
+
+            # write to output table 5000 rows at a time; note that column "rank" is ommitted
+            df[[self.ent1, self.ent2, 'createdAt']].to_sql(index=False,
+                                                           name=self.config['rec_output_config']['output_table'],
+                                                           con=engine,
+                                                           if_exists='append',
+                                                           chunksize=5000)
+            self.mylog('writing new recommendations took %.2f seconds.' %
+                       (time.time() - start))
+
+        except:
+            self.mylog('failed writing new recommendations to \"recommendation_service.%s\"' %
+                       self.config['rec_output_config']['output_table'])
+            self.mylog(sys.exc_info())
+            sys.exit()
+
+        # clear up old recommendations
+        try:
+            start = time.time()
+            self.mylog('clearing up previous recommendations')
+
+            engine.execute('delete from %(table)s where createdAt < \'%(timestamp)s\';' %
+                           {'table': self.config['rec_output_config']['output_table'],
+                            'timestamp': df.createdAt.values.tolist()[0]})
+            self.mylog('clearing up old recommendations took %.2f seconds.' % (
+                time.time() - start))
+
+        except:
+            self.mylog('failed clearing up old recommendations before %s from %s' % (df.createdAt.values.tolist()[0],
+                                                                                     self.config['rec_output_config']['output_table']))
+            self.mylog(sys.exc_info())
+            sys.exit()
+
+        return
+
+    def get_past_rec(self):
+        """ Fetches past recommendations from the database
+        """
+
+        # form the connection string used to connect to recommendation_service DB
+        try:
+            cxn_string = "mysql+mysqlconnector://%(user)s:%(password)s@%(host)s/%(database)s" % \
+                         self.config['db_config']['recommendation_service']
+            engine = create_engine(cxn_string)
+        except:
+            self.mylog(
+                'error creating connection engine, check connection string: %s' % cxn_string)
+            self.mylog(sys.exc_info())
+            sys.exit()
+
+        # backup the current recommendations in recommendation_service
+        # this moves current recommendations to the archive table
+        try:
+            self.mylog('backing up current recommendations to archive')
+            start = time.time()
+            query = 'SELECT * FROM %s' % self.config['rec_output_config']['output_table']
+            data_iterator = pd.read_sql_query(query, engine, chunksize=5000)
+            for records in data_iterator:
+                # copy records to archive
+                records[['createdAt', self.ent1, self.ent2]].to_sql(index=False,
+                                                                    name=self.config['rec_output_config']['archive_table'],
+                                                                    con=engine,
+                                                                    if_exists='append')
+        except:
+            self.mylog('failed backing up old recommendations')
+            self.mylog(sys.exc_info())
+            sys.exit()
+
+        # get list of recommendations in past N days from archive table
+        try:
+            self.mylog('fetching past recommendations')
+            start = time.time()
+            query = """SELECT %(entity_one)s, %(entity_two)s
+					   FROM %(table)s
+					   WHERE createdAt >= DATE_SUB(CURDATE(),interval %(recs_past_N_days)s day)"""\
+                               % {'entity_one': self.ent1_view.columns[0],
+                                  'entity_two': self.ent2_view.columns[0],
+                                  'table': self.config['rec_output_config']['archive_table'],
+                                  'recs_past_N_days': self.config['recs_past_N_days']
+                                  }
+            self.past_rec = pd.read_sql_query(query, cxn_string)
+            self.mylog('fetching past recommendations took %.2f seconds' % (
+                time.time() - start))
+        except:
+            self.mylog('error executing query to fetch past recommendations')
+            self.mylog(sys.exc_info())
+            sys.exit()
+
+        # filter out ent1 and ent2 IDs in past rec that are not present in the current dataset
+        # (this is more of a safety net mechanism)
+        # self.past_rec = self.past_rec[self.past_rec[self.ent1].isin(self.ent1_encoder.classes_.tolist())]
+        # self.past_rec = self.past_rec[self.past_rec[self.ent2].isin(self.ent2_encoder.classes_.tolist())]
+        # encode the ent1 and ent2 IDs from past rec
+        # self.past_rec[self.ent1] = self.ent1_encoder.transform(self.past_rec[self.ent1])
+        # self.past_rec[self.ent2] = self.ent2_encoder.transform(self.past_rec[self.ent2])
+
+        return

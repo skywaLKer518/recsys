@@ -39,3 +39,6 @@ rank/*
 ae-word2vec/*
 dlstm/*
 log/*
+config/environment/*
+
+!config/environment/local.json

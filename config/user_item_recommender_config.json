@@ -1,9 +1,9 @@
 {
-    "model": "lstm",
+    "model": "hmf",
     "dataset_name": "ml1m",
     "raw_data_dir": "examples/dataset",
-    "cache_dir": "examples/cache/lstm_ml1m",
-    "train_dir": "examples/train/lstm_ml1m",
+    "cache_dir": "examples/cache/hmf_ml1m",
+    "train_dir": "examples/train/hmf_ml1m",
     "test": false,
     "combine_att": "mix",
     "use_user_feature": true,
@@ -19,18 +19,18 @@
     "keep_prob": 0.5,
     "learning_rate_decay_factor": 1.0,
     "batch_size": 64,
-    "size": 64,
+    "size": 32,
     "max_gradient_norm": 5.0,
     "patience": 20,
     "power": 0.5,
     "num_layers": 1,
     "n_epoch": 10,
-    "steps_per_checkpoint": 5,
+    "steps_per_checkpoint": 300,
     "L": 30,
     "n_bucket": 10,
 
     "recommend": true,
-    "saverec": false,
+    "saverec": true,
     "top_N_items": 100,
     "topk": 100,
     "recommend_new": false,
@@ -74,5 +74,14 @@
     "beam_size": 10,
 
     "max_train_data_size": 0,
-    "old_att": false
+    "old_att": false,
+
+    "entity1": "users",
+    "entity2": "movies",
+    "entity1_ID": "userId",
+    "entity2_ID": "itemId",
+    "recs_past_N_days": 3,
+    "rec_output_config": { "output_table": "recommended_items",
+                           "archive_table": "recommended_items_archive"
+                         }
 }
