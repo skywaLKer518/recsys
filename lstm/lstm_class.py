@@ -281,7 +281,8 @@ class lstm(object):
             use_item_feature=use_item_feature,
             no_user_id=no_user_id,
             test=test,
-            mylog=self.mylog)
+            mylog=self.mylog,
+            config=self.config)
 
         # remove unk
         data_tr = [p for p in data_tr if (p[1] in item_ind2logit_ind)]
@@ -316,7 +317,8 @@ class lstm(object):
         # get test data
         if recommend:
             from evaluate import Evaluation as Evaluate
-            evaluation = Evaluate(raw_data, test=test)
+            evaluation = Evaluate(raw_data, test=test,
+                                  config=self.config, mylog=self.mylog)
             uinds = evaluation.get_uinds()
             seq_test = self.form_sequence_prediction(
                 seq_all, uinds, self.FLAGS.L, START_ID)

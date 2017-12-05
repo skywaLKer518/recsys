@@ -192,7 +192,8 @@ class hmf(object):
                 use_user_feature=use_user_feature,
                 use_item_feature=use_item_feature,
                 test=test,
-                mylog=self.mylog)
+                mylog=self.mylog,
+                config=self.config)
 
             self.mylog("train/dev size: %d/%d" % (len(data_tr), len(data_va)))
 
@@ -415,7 +416,8 @@ class hmf(object):
                 use_user_feature=use_user_feature,
                 use_item_feature=use_item_feature,
                 test=test,
-                mylog=self.mylog)
+                mylog=self.mylog,
+                config=self.config)
 
             model = self.create_model(sess, u_attributes, i_attributes,
                                       item_ind2logit_ind, logit_ind2item_ind, ind_item=None)
@@ -479,7 +481,8 @@ class hmf(object):
         test = self.FLAGS.test
 
         from evaluate import Evaluation as Evaluate
-        evaluation = Evaluate(raw_data, test=test)
+        evaluation = Evaluate(raw_data, test=test,
+                              config=self.config, mylog=self.mylog)
 
         # if filter:
         # get past N days of recommendations, these will be filtered out
