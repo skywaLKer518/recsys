@@ -1,0 +1,14 @@
+{
+	"recommendations": {
+		"host": "localhost",
+		"user": "root",
+		"password": "",
+		"database": "recommendations"
+	},
+	"recommendation_service": {
+		"host": "localhost",
+		"user": "root",
+		"password": "",
+		"database": "recommendation_service"
+	}
+}
